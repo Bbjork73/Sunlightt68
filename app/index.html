@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sunlight T68 Booking</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 92 52" role="img">
+              <path d="M8 31h6l5-12h38l12 12h11c2 0 4 2 4 4v5H8v-9Z" />
+              <path d="M24 19v12h17V19H24Zm22 0v12h16L51 19h-5Z" />
+              <circle cx="25" cy="40" r="7" />
+              <circle cx="68" cy="40" r="7" />
+            </svg>
+          </div>
+          <div>
+            <h1>Sunlight T68</h1>
+            <p>Booking og likviditet</p>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" aria-label="Hovedmeny">
+          <button class="active" data-view="dashboard">Oversikt</button>
+          <button data-view="bookings">Bookinger</button>
+          <button data-view="calendar">Kalender</button>
+          <button data-view="payments">Betalinger</button>
+          <button data-view="liquidity">Likviditet</button>
+          <button data-view="economy">Økonomi</button>
+          <button data-view="customers">Kunder</button>
+          <button data-view="settings">Innstillinger</button>
+        </nav>
+
+        <div class="sidebar-actions">
+          <button id="exportJson" class="tool-button" title="Eksporter data">
+            <span aria-hidden="true">⇩</span>
+            Eksporter
+          </button>
+          <label class="tool-button import-button" title="Importer data">
+            <span aria-hidden="true">⇧</span>
+            Importer
+            <input id="importJson" type="file" accept="application/json" />
+          </label>
+          <button id="resetData" class="tool-button danger" title="Tilbakestill">
+            <span aria-hidden="true">↺</span>
+            Tilbakestill
+          </button>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Lokal app</p>
+            <h2 id="viewTitle">Oversikt</h2>
+          </div>
+          <div class="topbar-actions">
+            <label>
+              Søkeord
+              <input id="searchInput" type="search" placeholder="Kunde, e-post, status" />
+            </label>
+            <button id="newBooking" class="primary-button">Ny booking</button>
+          </div>
+        </header>
+
+        <section id="dashboard" class="view active">
+          <div class="kpi-grid" id="kpiGrid"></div>
+          <div class="panel-grid">
+            <section class="panel wide">
+              <div class="panel-header">
+                <h3>Kommende bookinger</h3>
+              </div>
+              <div class="table-wrap">
+                <table id="upcomingTable"></table>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Depositum</h3>
+              </div>
+              <div id="depositSummary" class="summary-stack"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="bookings" class="view">
+          <div class="split-layout">
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Bookingliste</h3>
+              </div>
+              <div class="table-wrap">
+                <table id="bookingTable"></table>
+              </div>
+            </section>
+
+            <section class="panel editor-panel">
+              <div class="panel-header">
+                <h3 id="editorTitle">Booking</h3>
+              </div>
+              <form id="bookingForm" class="booking-form">
+                <input type="hidden" name="id" />
+                <div class="field-row">
+                  <label>Kunde <input name="customer" required /></label>
+                  <label>E-post <input name="email" type="email" /></label>
+                </div>
+                <div class="field-row">
+                  <label>Mobil <input name="phone" /></label>
+                  <label>Adresse <input name="address" /></label>
+                </div>
+                <div class="field-row">
+                  <label>Startdato <input name="start" type="date" required /></label>
+                  <label>Sluttdato <input name="end" type="date" required /></label>
+                </div>
+                <div class="field-row">
+                  <label>Starttid <input name="startTime" type="time" /></label>
+                  <label>Sluttid <input name="endTime" type="time" /></label>
+                </div>
+                <div class="field-row">
+                  <label>Leiepris <input name="price" type="number" min="0" step="100" /></label>
+                  <label>Depositum <input name="deposit" type="number" min="0" step="100" /></label>
+                </div>
+                <div class="field-row">
+                  <label>Depositumstatus <select name="depositStatus"></select></label>
+                  <label>Leiestatus <select name="rentStatus"></select></label>
+                </div>
+                <div class="field-row">
+                  <label>Depositum forfall <input name="depositDueDate" type="date" /></label>
+                  <label>Leie forfall <input name="rentDueDate" type="date" /></label>
+                </div>
+                <div class="field-row">
+                  <label>Depositum tilbake <input name="depositRefundDate" type="date" /></label>
+                  <label>Km per dag <input name="includedKmDay" type="number" min="0" step="50" /></label>
+                </div>
+                <label>Utleveringssted <input name="pickup" /></label>
+                <label>Tilbakeleveringssted <input name="returnPlace" /></label>
+                <label>Notat <textarea name="notes" rows="3"></textarea></label>
+                <div class="form-actions">
+                  <button type="submit" class="primary-button">Lagre</button>
+                  <button type="button" id="duplicateBooking">Dupliser</button>
+                  <button type="button" id="deleteBooking" class="danger">Slett</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section id="calendar" class="view">
+          <section class="panel">
+            <div class="calendar-toolbar">
+              <button id="prevMonth" title="Forrige måned">‹</button>
+              <h3 id="calendarTitle"></h3>
+              <button id="nextMonth" title="Neste måned">›</button>
+            </div>
+            <div id="calendarGrid" class="calendar-grid"></div>
+          </section>
+        </section>
+
+        <section id="payments" class="view">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Betalingslinjer</h3>
+            </div>
+            <div class="table-wrap">
+              <table id="paymentTable"></table>
+            </div>
+          </section>
+        </section>
+
+        <section id="liquidity" class="view">
+          <div class="panel-grid">
+            <section class="panel wide">
+              <div class="panel-header">
+                <h3>Likviditetsregnskap 2026</h3>
+              </div>
+              <div class="table-wrap">
+                <table id="liquidityTable"></table>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Udatert oppfølging</h3>
+              </div>
+              <div id="undatedCash" class="summary-stack"></div>
+            </section>
+          </div>
+          <section class="panel manual-panel">
+            <div class="panel-header">
+              <h3>Ekstra transaksjoner</h3>
+            </div>
+            <form id="transactionForm" class="transaction-form">
+              <label>Dato <input name="date" type="date" required /></label>
+              <label>Tekst <input name="text" required /></label>
+              <label>Beløp <input name="amount" type="number" step="100" required /></label>
+              <button type="submit" class="primary-button">Legg til</button>
+            </form>
+            <div class="table-wrap compact">
+              <table id="transactionTable"></table>
+            </div>
+          </section>
+        </section>
+
+        <section id="economy" class="view">
+          <div class="kpi-grid" id="economyKpis"></div>
+          <div class="panel-grid">
+            <section class="panel wide">
+              <div class="panel-header">
+                <h3>Årskostnadskalkulator</h3>
+              </div>
+              <form id="economyForm" class="calculator-form">
+                <label>Lånesaldo <input name="loanBalance" type="number" min="0" step="1000" /></label>
+                <label>Rente % <input name="interestRate" type="number" min="0" step="0.1" /></label>
+                <label>Avdrag per år <input name="annualPrincipal" type="number" min="0" step="1000" /></label>
+                <label>Forsikring per år <input name="insurance" type="number" min="0" step="500" /></label>
+                <label>Årsavgifter <input name="roadTax" type="number" min="0" step="500" /></label>
+                <label>Service <input name="service" type="number" min="0" step="500" /></label>
+                <label>Vedlikehold <input name="maintenance" type="number" min="0" step="500" /></label>
+                <label>Dekk/utstyr <input name="tiresEquipment" type="number" min="0" step="500" /></label>
+                <label>Lagring/parkering <input name="storage" type="number" min="0" step="500" /></label>
+                <label>Renhold/forbruk <input name="cleaningSupplies" type="number" min="0" step="500" /></label>
+                <label>Markedsføring <input name="marketing" type="number" min="0" step="500" /></label>
+                <label>Andre faste <input name="otherFixed" type="number" min="0" step="500" /></label>
+                <label>Variabel kost/døgn <input name="variablePerRentalDay" type="number" min="0" step="50" /></label>
+                <label>Avskrivning per år <input name="annualDepreciation" type="number" min="0" step="1000" /></label>
+                <label>Ønsket overskudd <input name="targetProfit" type="number" min="0" step="1000" /></label>
+                <button type="submit" class="primary-button">Lagre parametre</button>
+              </form>
+              <div class="table-wrap">
+                <table id="annualCostTable"></table>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Break-even</h3>
+              </div>
+              <div id="breakEvenSummary" class="summary-stack"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="customers" class="view">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Kunder</h3>
+            </div>
+            <div class="table-wrap">
+              <table id="customerTable"></table>
+            </div>
+          </section>
+        </section>
+
+        <section id="settings" class="view">
+          <section class="panel settings-panel">
+            <div class="panel-header">
+              <h3>Saldo og dato</h3>
+            </div>
+            <form id="settingsForm" class="booking-form">
+              <div class="field-row">
+                <label>Dato for saldo <input name="asOfDate" type="date" /></label>
+                <label>Kontosaldo <input name="accountOpeningBalance" type="number" step="100" /></label>
+              </div>
+              <div class="field-row">
+                <label>Likviditetsår <input name="liquidityYear" type="number" min="2020" max="2035" /></label>
+              </div>
+              <button type="submit" class="primary-button">Lagre innstillinger</button>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
