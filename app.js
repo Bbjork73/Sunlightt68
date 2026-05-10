@@ -1,4 +1,8 @@
 const STORAGE_KEY = "sunlight-t68-admin-v1";
+const SUPABASE_URL = "https://dijwdhqvbguscwwzgqgw.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpandkaHF2Ymd1c2N3d3pxZ3F3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0Mjc5OTUsImV4cCI6MjA5NDAwMzk5NX0.KHI7b_jCbE7BiQwc4xuOUzBnhEcBA71JVt0LkpPD0WU";
+const ONLINE_DATA_ID = "sunlight-t68-main";
 
 const statusOptions = ["Må sjekkes", "Mottatt", "Ikke mottatt", "Planlagt", "Refundert", "Kansellert"];
 const bookingStatusOptions = ["Bekreftet", "Planlagt", "Fullført", "Kansellert"];
@@ -212,6 +216,9 @@ let state = loadState();
 let activeView = "dashboard";
 let selectedBookingId = state.bookings[0]?.id || "";
 let calendarDate = new Date(2026, 4, 1);
+let supabaseClient = null;
+let onlineUser = null;
+let onlineSaveTimer = null;
 let tableSort = {
   bookings: { key: "start", direction: "asc" },
   upcoming: { key: "start", direction: "asc" },
@@ -244,6 +251,14 @@ const els = {
   transactionForm: document.querySelector("#transactionForm"),
   transactionTable: document.querySelector("#transactionTable"),
   settingsForm: document.querySelector("#settingsForm"),
+  onlineEmail: document.querySelector("#onlineEmail"),
+  onlinePassword: document.querySelector("#onlinePassword"),
+  loginOnline: document.querySelector("#loginOnline"),
+  signupOnline: document.querySelector("#signupOnline"),
+  loadOnline: document.querySelector("#loadOnline"),
+  saveOnline: document.querySelector("#saveOnline"),
+  logoutOnline: document.querySelector("#logoutOnline"),
+  onlineStatus: document.querySelector("#onlineStatus"),
   toast: document.querySelector("#toast"),
 };
 
@@ -308,6 +323,7 @@ function applyMigrations(nextState) {
 
 function persist(message = "Lagret") {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state, null, 2));
+  queueOnlineSave();
   showToast(message);
   render();
 }
@@ -317,6 +333,123 @@ function showToast(message) {
   els.toast.classList.add("show");
   window.clearTimeout(showToast.timer);
   showToast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 1800);
+}
+
+function appSnapshot() {
+  return {
+    settings: state.settings,
+    bookings: state.bookings,
+    transactions: state.transactions,
+    economyParams: state.economyParams,
+  };
+}
+
+function updateOnlineStatus(message) {
+  if (!els.onlineStatus) return;
+  els.onlineStatus.textContent = message || (onlineUser ? `Logget inn: ${onlineUser.email}` : "Ikke logget inn");
+}
+
+async function initSupabase() {
+  if (!window.supabase?.createClient) {
+    updateOnlineStatus("Supabase kunne ikke lastes");
+    return;
+  }
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data } = await supabaseClient.auth.getSession();
+  onlineUser = data.session?.user || null;
+  updateOnlineStatus();
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    onlineUser = session?.user || null;
+    updateOnlineStatus();
+  });
+}
+
+function requireOnlineLogin() {
+  if (!supabaseClient) {
+    showToast("Supabase er ikke klar ennå");
+    return false;
+  }
+  if (!onlineUser) {
+    showToast("Logg inn for online lagring");
+    return false;
+  }
+  return true;
+}
+
+async function signInOnline() {
+  if (!supabaseClient) return showToast("Supabase er ikke klar ennå");
+  const email = els.onlineEmail.value.trim();
+  const password = els.onlinePassword.value;
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) return showToast(error.message);
+  onlineUser = data.user;
+  updateOnlineStatus();
+  showToast("Logget inn");
+}
+
+async function signUpOnline() {
+  if (!supabaseClient) return showToast("Supabase er ikke klar ennå");
+  const email = els.onlineEmail.value.trim();
+  const password = els.onlinePassword.value;
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) return showToast(error.message);
+  onlineUser = data.user || onlineUser;
+  updateOnlineStatus(data.user ? "Bruker opprettet" : "Sjekk e-post for bekreftelse");
+  showToast("Bruker opprettet");
+}
+
+async function logoutOnline() {
+  if (!supabaseClient) return;
+  await supabaseClient.auth.signOut();
+  onlineUser = null;
+  updateOnlineStatus();
+  showToast("Logget ut");
+}
+
+async function saveOnline({ quiet = false } = {}) {
+  if (!requireOnlineLogin()) return;
+  const payload = {
+    id: ONLINE_DATA_ID,
+    user_id: onlineUser.id,
+    data: appSnapshot(),
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabaseClient.from("app_data").upsert(payload, { onConflict: "id" });
+  if (error) {
+    updateOnlineStatus("Online lagring feilet");
+    if (!quiet) showToast(error.message);
+    return;
+  }
+  updateOnlineStatus(`Online lagret ${new Date().toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}`);
+  if (!quiet) showToast("Lagret online");
+}
+
+function queueOnlineSave() {
+  if (!onlineUser) return;
+  window.clearTimeout(onlineSaveTimer);
+  onlineSaveTimer = window.setTimeout(() => saveOnline({ quiet: true }), 900);
+}
+
+async function loadOnline() {
+  if (!requireOnlineLogin()) return;
+  const { data, error } = await supabaseClient.from("app_data").select("data, updated_at").eq("id", ONLINE_DATA_ID).maybeSingle();
+  if (error) return showToast(error.message);
+  if (!data?.data) {
+    await saveOnline({ quiet: true });
+    showToast("Ingen online data funnet, lagret lokal versjon online");
+    return;
+  }
+  state = applyMigrations({
+    settings: { ...defaultState.settings, ...data.data.settings },
+    bookings: Array.isArray(data.data.bookings) ? data.data.bookings : structuredClone(defaultState.bookings),
+    transactions: Array.isArray(data.data.transactions) ? data.data.transactions : [],
+    economyParams: { ...defaultState.economyParams, ...data.data.economyParams },
+  });
+  selectedBookingId = state.bookings[0]?.id || "";
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state, null, 2));
+  render();
+  updateOnlineStatus(`Lastet online ${new Date(data.updated_at).toLocaleString("nb-NO")}`);
+  showToast("Lastet inn online");
 }
 
 function escapeHtml(value) {
@@ -1137,6 +1270,12 @@ function bindEvents() {
     persist("Innstillinger lagret");
   });
 
+  els.loginOnline.addEventListener("click", signInOnline);
+  els.signupOnline.addEventListener("click", signUpOnline);
+  els.logoutOnline.addEventListener("click", logoutOnline);
+  els.saveOnline.addEventListener("click", () => saveOnline());
+  els.loadOnline.addEventListener("click", loadOnline);
+
   document.querySelector("#exportJson").addEventListener("click", downloadJson);
 
   document.querySelector("#importJson").addEventListener("change", async (event) => {
@@ -1165,3 +1304,4 @@ function bindEvents() {
 bindEvents();
 setActiveView(activeView);
 render();
+initSupabase();

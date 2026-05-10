@@ -219,6 +219,48 @@ tr.selectable:hover td {
   margin-top: auto;
 }
 
+.online-panel {
+  display: grid;
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 12px;
+}
+
+.online-panel h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.online-panel label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.online-panel input {
+  min-height: 34px;
+  padding: 7px 9px;
+}
+
+.online-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.online-actions button,
+.online-panel > button {
+  min-height: 34px;
+  padding: 7px 8px;
+}
+
+.online-panel p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .tool-button {
   display: flex;
   align-items: center;

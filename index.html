@@ -50,6 +50,22 @@
             Tilbakestill
           </button>
         </div>
+
+        <div class="online-panel">
+          <h2>Online lagring</h2>
+          <label>E-post <input id="onlineEmail" type="email" autocomplete="email" /></label>
+          <label>Passord <input id="onlinePassword" type="password" autocomplete="current-password" /></label>
+          <div class="online-actions">
+            <button id="loginOnline" type="button">Logg inn</button>
+            <button id="signupOnline" type="button">Opprett</button>
+          </div>
+          <div class="online-actions">
+            <button id="loadOnline" type="button">Last inn</button>
+            <button id="saveOnline" type="button">Lagre</button>
+          </div>
+          <button id="logoutOnline" type="button" class="tool-button">Logg ut</button>
+          <p id="onlineStatus">Ikke logget inn</p>
+        </div>
       </aside>
 
       <main>
@@ -274,6 +290,7 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./app.js"></script>
   </body>
 </html>
