@@ -1,5 +1,5 @@
 const STORAGE_KEY = "sunlight-t68-admin-v1";
-const SUPABASE_URL = "https://dijwdhqvbguscwwzgqgw.supabase.co";
+const SUPABASE_URL = "https://dijwdhqvbguscwwzqgqw.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpandkaHF2Ymd1c2N3d3pxZ3F3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0Mjc5OTUsImV4cCI6MjA5NDAwMzk5NX0.KHI7b_jCbE7BiQwc4xuOUzBnhEcBA71JVt0LkpPD0WU";
 const ONLINE_DATA_ID = "sunlight-t68-main";
