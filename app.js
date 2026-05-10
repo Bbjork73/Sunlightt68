@@ -255,6 +255,8 @@ const els = {
   onlinePassword: document.querySelector("#onlinePassword"),
   loginOnline: document.querySelector("#loginOnline"),
   signupOnline: document.querySelector("#signupOnline"),
+  resetPasswordOnline: document.querySelector("#resetPasswordOnline"),
+  updatePasswordOnline: document.querySelector("#updatePasswordOnline"),
   loadOnline: document.querySelector("#loadOnline"),
   saveOnline: document.querySelector("#saveOnline"),
   logoutOnline: document.querySelector("#logoutOnline"),
@@ -396,6 +398,27 @@ async function signUpOnline() {
   onlineUser = data.user || onlineUser;
   updateOnlineStatus(data.user ? "Bruker opprettet" : "Sjekk e-post for bekreftelse");
   showToast("Bruker opprettet");
+}
+
+async function resetPasswordOnline() {
+  if (!supabaseClient) return showToast("Supabase er ikke klar ennå");
+  const email = els.onlineEmail.value.trim();
+  if (!email) return showToast("Skriv e-post først");
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return showToast(error.message);
+  updateOnlineStatus("Sjekk e-post for reset-lenke");
+  showToast("Reset-lenke sendt");
+}
+
+async function updatePasswordOnline() {
+  if (!supabaseClient) return showToast("Supabase er ikke klar ennå");
+  const password = els.onlinePassword.value;
+  if (!password || password.length < 6) return showToast("Skriv nytt passord, minst 6 tegn");
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  if (error) return showToast(error.message);
+  showToast("Passord oppdatert");
+  updateOnlineStatus();
 }
 
 async function logoutOnline() {
@@ -1272,6 +1295,8 @@ function bindEvents() {
 
   els.loginOnline.addEventListener("click", signInOnline);
   els.signupOnline.addEventListener("click", signUpOnline);
+  els.resetPasswordOnline.addEventListener("click", resetPasswordOnline);
+  els.updatePasswordOnline.addEventListener("click", updatePasswordOnline);
   els.logoutOnline.addEventListener("click", logoutOnline);
   els.saveOnline.addEventListener("click", () => saveOnline());
   els.loadOnline.addEventListener("click", loadOnline);
